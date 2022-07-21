@@ -4,8 +4,15 @@ if [[ ! -d ~/.zplug ]];then
 fi
 # autocompleteの設定　さほど便利にもならなかったのでオフ 
 source ~/.zplug/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-zstyle ':autocomplete:*' insert-unambiguous yes
+# zstyle ':autocomplete:*' insert-unambiguous yes
 zstyle ':autocomplete:*' fzf-completion yes
+zstyle ':completion:*:parameters'  list-colors '=*=32'
+zstyle ':completion:*:commands' list-colors '=*=1;31'
+zstyle ':completion:*:builtins' list-colors '=*=1;38;5;142'
+zstyle ':completion:*:aliases' list-colors '=*=2;38;5;128'
+zstyle ':completion:*:*:kill:*' list-colors '=(#b) #([0-9]#)*( *[a-z])*=34=31=33'
+zstyle ':completion:*:options' list-colors '=^(-- *)=34'
+
 
 
 # zplugを使う
@@ -50,9 +57,11 @@ setopt hist_ignore_dups
 setopt share_history
 setopt hist_expand
 
+source ~/.zsh/git-prompt.sh
+setopt PROMPT_SUBST
+# promptの色や形式の設定
+PS1='%F{blue}%~ %F{green}$(__git_ps1 " (%s) ")%f'$'\n'"%F{red}>%f"
 
-export PS1="%~ "
-# PROMPT="%~ $(__git_ps1 "%s")"
 # setopt auto_list
 # setopt auto_menu
 # setopt auto_pushd
@@ -62,6 +71,7 @@ export PS1="%~ "
 fpath=(~/.zsh/completion $fpath)
 zstyle ':completion:*:*:docker:*' option-stacking yes
 zstyle ':completion:*:*:docker-*:*' option-stacking yes
+zstyle ':completion:*:*:git:*' script ~/.zsh/git-completion.bash
 # autoload -U compinit && compinit
 # autoload -U promptinit; promptinit
 # prompt pure
