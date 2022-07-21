@@ -84,3 +84,4 @@ export PATH="$HOME/.poetry/bin:$PATH"
 
 # eval "$(pyenv init -)"
 
+[ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
