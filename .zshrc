@@ -3,6 +3,7 @@
 #   git clone https://github.com/zplug/zplug ~/.zplug
 # fi
 source ~/.zplug/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+source ~/.zplug/repos/zsh-users/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 # zstyle ':autocomplete:*' insert-unambiguous yes
 zstyle ':autocomplete:*' fzf-completion yes
 zstyle ':completion:*:parameters'  list-colors '=*=32'
