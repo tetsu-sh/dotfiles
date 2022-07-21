@@ -1,8 +1,7 @@
 # zplugが無ければgitからclone
-if [[ ! -d ~/.zplug ]];then
-  git clone https://github.com/zplug/zplug ~/.zplug
-fi
-# autocompleteの設定　さほど便利にもならなかったのでオフ 
+# if [[ ! -d ~/.zplug ]];then
+#   git clone https://github.com/zplug/zplug ~/.zplug
+# fi
 source ~/.zplug/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 # zstyle ':autocomplete:*' insert-unambiguous yes
 zstyle ':autocomplete:*' fzf-completion yes
@@ -16,7 +15,7 @@ zstyle ':completion:*:options' list-colors '=^(-- *)=34'
 
 
 # zplugを使う
-source ~/.zplug/init.zsh
+# source ~/.zplug/init.zsh
 
 # ここに使いたいプラグインを書いておく
 # zplug "ユーザー名/リポジトリ名", タグ
@@ -39,15 +38,16 @@ source ~/.zplug/init.zsh
 # zplug "zsh-users/zsh-history-substring-search", defer:3
 
 # コマンドをリンクして、PATH に追加し、プラグインは読み込む
-zplug load –-verbose
+# zplug load –-verbose
 
-# インストールしてないプラグインはインストール
-if ! zplug check --verbose; then
-    printf "Install? [y/N]: "
-    if read -q; then
-        echo; zplug install
-    fi
-fi
+
+# # インストールしてないプラグインはインストール
+# if ! zplug check --verbose; then
+#     printf "Install? [y/N]: "
+#     if read -q; then
+#         echo; zplug install
+#     fi
+# fi
 
 export LANG=ja_JP.UTF-8
 HISTFILE=$HOME/.zsh_history
@@ -66,8 +66,8 @@ PS1='%F{blue}%~ %F{green}$(__git_ps1 " (%s) ")%f'$'\n'"%F{red}>%f"
 # setopt auto_menu
 # setopt auto_pushd
 # zstyle ':completion:*:default' menu select=1
-# export LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-# zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 fpath=(~/.zsh/completion $fpath)
 zstyle ':completion:*:*:docker:*' option-stacking yes
 zstyle ':completion:*:*:docker-*:*' option-stacking yes
