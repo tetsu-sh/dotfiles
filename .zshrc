@@ -58,10 +58,18 @@ setopt hist_ignore_dups
 setopt share_history
 setopt hist_expand
 
+autoload -Uz vcs_info
 source ~/.zsh/git-prompt.sh
+precmd (){ vcs_info }
 setopt PROMPT_SUBST
 # promptの色や形式の設定
-PS1='%F{blue}%~ %F{green}$(__git_ps1 " (%s) ")%f'$'\n'"%F{red}>%f"
+PS1='%F{blue}%~ ${vcs_info_msg_0_}'$'\n'"%F{red}>%f"
+
+zstyle ':vcs_info:git:*' check-for-changes true
+zstyle ':vcs_info:git:*' stagedstr "%F{yellow}!"
+zstyle ':vcs_info:git:*' unstagedstr "%F{red}+"
+zstyle ':vcs_info:*' formats "%F{green}%c%u[%b]%f"
+zstyle ':vcs_info:*' actionformats '[%b|%a]'
 
 # setopt auto_list
 # setopt auto_menu
