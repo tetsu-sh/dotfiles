@@ -2,10 +2,10 @@
 # if [[ ! -d ~/.zplug ]];then
 #   git clone https://github.com/zplug/zplug ~/.zplug
 # fi
-source ~/.zplug/repos/zsh-autocomplete/zsh-autocomplete.plugin.zsh
-source ~/.zplug/repos/zsh-users/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
-# zstyle ':autocomplete:*' insert-unambiguous yes
+zstyle ':autocomplete:*' insert-unambiguous yes
 zstyle ':autocomplete:*' fzf-completion yes
+source ~/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh
+source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 zstyle ':completion:*:parameters'  list-colors '=*=32'
 zstyle ':completion:*:commands' list-colors '=*=1;31'
 zstyle ':completion:*:builtins' list-colors '=*=1;38;5;142'
@@ -75,12 +75,12 @@ zstyle ':vcs_info:*' actionformats '[%b|%a]'
 # setopt auto_menu
 # setopt auto_pushd
 # zstyle ':completion:*:default' menu select=1
-LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
-zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
+# LS_COLORS='di=34:ln=35:so=32:pi=33:ex=31:bd=46;34:cd=43;34:su=41;30:sg=46;30:tw=42;30:ow=43;30'
+# zstyle ':completion:*:default' list-colors ${(s.:.)LS_COLORS}
 fpath=(~/.zsh/completion $fpath)
 zstyle ':completion:*:*:docker:*' option-stacking yes
 zstyle ':completion:*:*:docker-*:*' option-stacking yes
-zstyle ':completion:*:*:git:*' script ~/.zsh/git-completion.bash
+# zstyle ':completion:*:*:git:*' script ~/.zsh/completion/git-completion.bash
 # autoload -U compinit && compinit
 # autoload -U promptinit; promptinit
 # prompt pure
