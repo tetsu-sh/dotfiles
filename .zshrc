@@ -1,3 +1,4 @@
+
 # zplugが無ければgitからclone
 # if [[ ! -d ~/.zplug ]];then
 #   git clone https://github.com/zplug/zplug ~/.zplug
@@ -85,11 +86,20 @@ zstyle ':completion:*:*:docker-*:*' option-stacking yes
 # autoload -U promptinit; promptinit
 # prompt pure
 alias ...='cd ../..'
+# alias cd='z'
 
 export PATH="$HOME/.poetry/bin:$PATH"
+export PATH="$HOME/go/bin:$PATH"
 
-# pyenv init --path
-
-# eval "$(pyenv init -)"
 
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
+
+export PYENV_ROOT="$HOME/.pyenv"
+command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
+eval "$(pyenv init -)"
+
+source /root/.config/broot/launcher/bash/br
+
+export PATH="$HOME/.local/bin:$PATH"
+
+eval "$(zoxide init zsh)"
