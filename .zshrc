@@ -5,6 +5,12 @@
 # fi
 zstyle ':autocomplete:*' insert-unambiguous yes
 zstyle ':autocomplete:*' fzf-completion yes
+if [[ ! -d ~/.zsh ]];then
+    mkdir $HOME/.zsh
+    cd $HOME/.zsh
+    git clone --depth 1 -- https://github.com/marlonrichert/zsh-autocomplete.git
+    git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
+fi
 source ~/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 zstyle ':completion:*:parameters'  list-colors '=*=32'
@@ -98,8 +104,9 @@ export PYENV_ROOT="$HOME/.pyenv"
 command -v pyenv >/dev/null || export PATH="$PYENV_ROOT/bin:$PATH"
 eval "$(pyenv init -)"
 
-source /root/.config/broot/launcher/bash/br
+# source /root/.config/broot/launcher/bash/br
 
 export PATH="$HOME/.local/bin:$PATH"
 
+. "$HOME/.cargo/env"
 eval "$(zoxide init zsh)"
