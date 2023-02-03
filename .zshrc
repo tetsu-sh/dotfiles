@@ -11,6 +11,15 @@ if [[ ! -d ~/.zsh ]];then
     git clone --depth 1 -- https://github.com/marlonrichert/zsh-autocomplete.git
     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
 fi
+if [[ ! -e ~/.zsh/git-complete.sh ]];then
+    cd ~/.zsh
+    curl -o git-completion.sh \
+    https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
+    curl -o git-prompt.sh \
+    https://raw.githubusercontent.com/git/git/master/contrib/completion/git-prompt.sh
+fi
+
+
 source ~/.zsh/zsh-autocomplete/zsh-autocomplete.plugin.zsh
 source ~/.zsh/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh 
 zstyle ':completion:*:parameters'  list-colors '=*=32'
