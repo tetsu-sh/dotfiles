@@ -11,7 +11,7 @@ if [[ ! -d ~/.zsh ]];then
     git clone --depth 1 -- https://github.com/marlonrichert/zsh-autocomplete.git
     git clone https://github.com/zsh-users/zsh-syntax-highlighting.git
 fi
-if [[ ! -e ~/.zsh/git-complete.sh ]];then
+if [[ ! -e ~/.zsh/git-prompt.sh ]];then
     cd ~/.zsh
     curl -o git-completion.sh \
     https://raw.githubusercontent.com/git/git/master/contrib/completion/git-completion.bash
