@@ -10,3 +10,4 @@ export PATH=$HOME/Developer/flutter/bin:$PATH
 export PATH="/usr/local/opt/openssl@1.1/bin:$PATH"
 
 export PATH="$HOME/.poetry/bin:$PATH"
+. "$HOME/.cargo/env"
