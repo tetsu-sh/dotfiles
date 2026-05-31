@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd -P)"
 SOURCE_DIR="$REPO_DIR"
 TARGET_DIR="${HOME}/.config/nvim"
 CONFIG_DIR="$(dirname "$TARGET_DIR")"
@@ -10,7 +10,7 @@ CONFIG_DIR="$(dirname "$TARGET_DIR")"
 mkdir -p "$CONFIG_DIR"
 
 if [ -L "$TARGET_DIR" ]; then
-  CURRENT_TARGET="$(readlink "$TARGET_DIR")"
+  CURRENT_TARGET="$(cd "$TARGET_DIR" && pwd -P)"
   if [ "$CURRENT_TARGET" = "$SOURCE_DIR" ]; then
     echo "Symlink already configured: $TARGET_DIR -> $SOURCE_DIR"
     exit 0
