@@ -1,6 +1,8 @@
 local preview_win
 local preview_path
 local preview_augroup
+local preview_source_buf
+local preview_source_win
 local fyler_win
 
 local function show_line_numbers(win)
@@ -36,6 +38,7 @@ local function create_scratch_preview_buffer(name, lines, filetype)
   local buf = vim.api.nvim_create_buf(false, true)
   vim.bo[buf].bufhidden = "wipe"
   vim.bo[buf].buflisted = false
+  vim.bo[buf].buftype = "nofile"
   vim.bo[buf].modifiable = true
   vim.api.nvim_buf_set_name(buf, name)
   vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
@@ -92,24 +95,62 @@ local function prepare_file_preview_buffer(path)
     return create_scratch_preview_buffer("fyler-preview://" .. path, { "" })
   end
 
-  local buf = vim.fn.bufadd(path)
-  vim.fn.bufload(buf)
-  vim.bo[buf].buflisted = false
-  vim.bo[buf].modifiable = false
+  local source_buf = vim.fn.bufnr(path)
+  local lines
+  local filetype
+  local syntax
 
-  if vim.bo[buf].filetype == "" then
-    local filetype = vim.filetype.match({ filename = path, buf = buf })
-    if filetype then
-      vim.bo[buf].filetype = filetype
-    end
+  if source_buf ~= -1 and vim.api.nvim_buf_is_loaded(source_buf) then
+    lines = vim.api.nvim_buf_get_lines(source_buf, 0, -1, false)
+    filetype = vim.bo[source_buf].filetype
+    syntax = vim.bo[source_buf].syntax
+  else
+    local ok, file_lines = pcall(vim.fn.readfile, path)
+    lines = ok and file_lines or { "" }
+    filetype = vim.filetype.match({ filename = path })
   end
 
-  if vim.bo[buf].syntax == "" and vim.bo[buf].filetype ~= "" then
-    vim.bo[buf].syntax = vim.bo[buf].filetype
+  local preview_buf = create_scratch_preview_buffer("fyler-preview://" .. path, lines, filetype)
+
+  if syntax and syntax ~= "" then
+    vim.bo[preview_buf].syntax = syntax
+  elseif filetype and filetype ~= "" then
+    vim.bo[preview_buf].syntax = filetype
   end
 
-  pcall(vim.treesitter.start, buf)
-  return buf
+  pcall(vim.treesitter.start, preview_buf)
+
+  vim.api.nvim_create_autocmd("BufEnter", {
+    buffer = preview_buf,
+    once = true,
+    callback = function()
+      local winid = vim.api.nvim_get_current_win()
+      local view = vim.api.nvim_win_call(winid, vim.fn.winsaveview)
+      vim.schedule(function()
+        if not vim.api.nvim_win_is_valid(winid) or vim.api.nvim_get_current_win() ~= winid then
+          return
+        end
+
+        local ok, err = pcall(vim.cmd.edit, vim.fn.fnameescape(path))
+        if not ok and err and not tostring(err):match("^Vim:E325:") then
+          vim.notify(tostring(err), vim.log.levels.ERROR)
+          return
+        end
+
+        local line_count = vim.api.nvim_buf_line_count(0)
+        local restored = vim.deepcopy(view)
+        restored.lnum = math.max(1, math.min(restored.lnum or 1, line_count))
+        restored.topline = math.max(1, math.min(restored.topline or restored.lnum, line_count))
+        pcall(vim.fn.winrestview, restored)
+
+        if vim.wo.previewwindow then
+          vim.bo.bufhidden = "wipe"
+        end
+      end)
+    end,
+  })
+
+  return preview_buf
 end
 
 local close_preview
@@ -149,6 +190,8 @@ close_preview = function()
 
   preview_augroup = nil
   preview_path = nil
+  preview_source_buf = nil
+  preview_source_win = nil
 
   if preview_win and vim.api.nvim_win_is_valid(preview_win) then
     vim.api.nvim_win_close(preview_win, true)
@@ -157,8 +200,84 @@ close_preview = function()
   preview_win = nil
 end
 
+local function resolve_target_window(explorer)
+  local candidates = {
+    preview_source_win,
+    explorer.win.old_winid,
+  }
+
+  for _, winid in ipairs(candidates) do
+    if type(winid) == "number" and vim.api.nvim_win_is_valid(winid) and winid ~= explorer.win.winid and winid ~= preview_win then
+      return winid
+    end
+  end
+
+  for _, winid in ipairs(vim.api.nvim_list_wins()) do
+    if winid ~= explorer.win.winid and winid ~= preview_win and vim.api.nvim_win_is_valid(winid) then
+      local bufnr = vim.api.nvim_win_get_buf(winid)
+      if vim.bo[bufnr].filetype ~= "fyler" then
+        return winid
+      end
+    end
+  end
+
+  if type(explorer.win.winid) == "number" and vim.api.nvim_win_is_valid(explorer.win.winid) then
+    return explorer.win.winid
+  end
+end
+
+local function open_file_in_target(explorer, action)
+  return function()
+    local entry = explorer:cursor_node_entry()
+    if not entry then
+      return
+    end
+
+    if entry.type == "directory" then
+      explorer:exec_action("n_select")
+      return
+    end
+
+    local target_win = resolve_target_window(explorer)
+    if not target_win then
+      return
+    end
+
+    explorer.win.old_winid = target_win
+    explorer.win.old_bufnr = vim.api.nvim_win_get_buf(target_win)
+
+    if action == "tabedit" then
+      close_preview()
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_call(target_win, function()
+        vim.cmd.tabedit(vim.fn.fnameescape(entry.path))
+      end)
+      return
+    elseif action == "edit" then
+      vim.api.nvim_set_current_win(target_win)
+      vim.api.nvim_win_call(target_win, function()
+        vim.cmd.edit(vim.fn.fnameescape(entry.path))
+      end)
+    elseif action == "vsplit" then
+      vim.api.nvim_set_current_win(target_win)
+      vim.cmd.vsplit(vim.fn.fnameescape(entry.path))
+    elseif action == "split" then
+      vim.api.nvim_set_current_win(target_win)
+      vim.cmd.split(vim.fn.fnameescape(entry.path))
+    end
+
+    close_preview()
+  end
+end
+
 local function close_preview_before_action(action)
   return function(explorer)
+    if preview_source_win and vim.api.nvim_win_is_valid(preview_source_win) then
+      explorer.win.old_winid = preview_source_win
+    end
+    if preview_source_buf and vim.api.nvim_buf_is_valid(preview_source_buf) then
+      explorer.win.old_bufnr = preview_source_buf
+    end
     close_preview()
     explorer:exec_action(action)
   end
@@ -166,10 +285,18 @@ end
 
 local function close_preview_before_file_action(action)
   return function(explorer)
-    local entry = explorer:cursor_node_entry()
-    if entry and entry.type == "file" then
-      close_preview()
+    local mapped_action = ({
+      n_select = "edit",
+      n_select_v_split = "vsplit",
+      n_select_split = "split",
+      n_select_tab = "tabedit",
+    })[action]
+
+    if mapped_action then
+      open_file_in_target(explorer, mapped_action)()
+      return
     end
+
     explorer:exec_action(action)
   end
 end
@@ -190,11 +317,14 @@ local function toggle_preview(explorer)
   end
 
   fyler_win = explorer.win.winid
+  preview_source_buf = explorer.win.old_bufnr
+  preview_source_win = explorer.win.old_winid
   show_line_numbers(fyler_win)
 
   vim.api.nvim_set_current_win(fyler_win)
   vim.cmd.vsplit()
   preview_win = vim.api.nvim_get_current_win()
+  vim.wo[preview_win].previewwindow = true
 
   local kind = entry.type == "directory" and "directory" or "file"
   local buf = kind == "directory"
@@ -240,6 +370,67 @@ return {
         },
       },
     },
+    config = function(_, opts)
+      local fyler = require("fyler")
+      fyler.setup(opts)
+
+      pcall(vim.api.nvim_del_augroup_by_name, "fyler_augroup_global")
+      local augroup = vim.api.nvim_create_augroup("fyler_augroup_global", { clear = true })
+      local config = require("fyler.config")
+
+      if config.values.views.finder.default_explorer then
+        vim.cmd("silent! autocmd! FileExplorer *")
+        vim.cmd("autocmd VimEnter * ++once silent! autocmd! FileExplorer *")
+
+        vim.api.nvim_create_autocmd("BufEnter", {
+          group = augroup,
+          pattern = "*",
+          desc = "Hijack NETRW commands",
+          callback = function(arg)
+            if vim.api.nvim_get_current_buf() ~= arg.buf then
+              return
+            end
+
+            local path = vim.api.nvim_buf_get_name(0)
+            if vim.fn.isdirectory(path) ~= 1 then
+              return
+            end
+
+            vim.api.nvim_buf_delete(0, { force = true })
+            fyler.open({ dir = path })
+          end,
+        })
+      end
+
+      vim.api.nvim_create_autocmd("ColorScheme", {
+        group = augroup,
+        desc = "Adjust highlight groups with respect to colorscheme",
+        callback = function()
+          require("fyler.lib.hl").setup()
+        end,
+      })
+
+      if config.values.views.finder.follow_current_file then
+        vim.api.nvim_create_autocmd("BufEnter", {
+          group = augroup,
+          desc = "Track current focused buffer in finder",
+          callback = vim.schedule_wrap(function(arg)
+            if vim.wo.previewwindow then
+              return
+            end
+            fyler.navigate(arg.file)
+          end),
+        })
+      end
+
+      vim.api.nvim_create_autocmd("BufWinEnter", {
+        group = augroup,
+        desc = "Drop finder window when buffer inside it changes to NON FYLER BUFFER",
+        callback = function()
+          require("fyler.views.finder").recover()
+        end,
+      })
+    end,
     init = function()
       vim.api.nvim_create_user_command("FylerHere", function(command_opts)
         local dir = command_opts.args ~= "" and command_opts.args or vim.fn.getcwd()

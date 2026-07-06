@@ -134,10 +134,65 @@ return {
 				},
 			},
 			lsp = {
-				formatter = {
-					quote_json_variables = false,
-				},
+				formatter = false,
 			},
 		},
+		config = function(_, opts)
+			require("kulala").setup(opts)
+			local body_formatter = require("config.http_json_body_formatter")
+
+			local augroup = vim.api.nvim_create_augroup("kulala-best-effort-format", { clear = true })
+
+			local function collect_json_body_nodes(node, acc)
+				acc = acc or {}
+				if node:type() == "json_body" then
+					table.insert(acc, node)
+					return acc
+				end
+				for child in node:iter_children() do
+					collect_json_body_nodes(child, acc)
+				end
+				return acc
+			end
+
+			vim.api.nvim_create_autocmd("FileType", {
+				group = augroup,
+				pattern = { "http", "rest" },
+				callback = function(event)
+					vim.b[event.buf].autoformat = false
+				end,
+			})
+
+			vim.api.nvim_create_autocmd("BufWritePre", {
+				group = augroup,
+				pattern = { "*.http", "*.rest" },
+				callback = function(event)
+					local ok, parser = pcall(vim.treesitter.get_parser, event.buf, "kulala_http")
+					if not ok or not parser then
+						return
+					end
+
+					local tree = parser:parse()[1]
+					if not tree then
+						return
+					end
+
+					local json_nodes = collect_json_body_nodes(tree:root())
+					for index = #json_nodes, 1, -1 do
+						local node = json_nodes[index]
+						local formatted = body_formatter.format_json_like_body(vim.treesitter.get_node_text(node, event.buf))
+						if formatted then
+							local start_row, start_col, end_row, end_col = node:range()
+							local replacement = vim.split(formatted, "\n", { plain = true })
+							local end_line = vim.api.nvim_buf_get_lines(event.buf, end_row, end_row + 1, false)[1] or ""
+							if end_col == 0 and end_line ~= "" then
+								table.insert(replacement, "")
+							end
+							pcall(vim.api.nvim_buf_set_text, event.buf, start_row, start_col, end_row, end_col, replacement)
+						end
+					end
+				end,
+			})
+		end,
 	},
 }
